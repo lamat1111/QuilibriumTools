@@ -1,6 +1,11 @@
 #!/bin/bash
-# Set the version number
-VERSION="1.4.21"
+#Node version is not used - executiuon via release_autorun 
+#Comment out for automatic creation of the node version
+#NODE_VERSION=1.4.21
+
+#Comment out for automatic creation of the qclient version
+#QCLIENT_VERSION=1.4.19.1
+
 cd ~
 # Step 0: Welcome
 echo "This script is made with ❤️ by 0xOzgur.eth @ https://quilibrium.space "
@@ -78,6 +83,53 @@ if [ -d ~/ceremonyclient ]; then
     fi
 fi
 
+#==========================
+# CREATE PATH VARIABLES
+#==========================
+
+# Determine node latest version
+# Check if NODE_VERSION is empty
+if [ -z "$NODE_VERSION" ]; then
+    NODE_VERSION=$(curl -s https://releases.quilibrium.com/release | grep -E "^node-[0-9]+(\.[0-9]+)*" | grep -v "dgst" | sed 's/^node-//' | cut -d '-' -f 1 | sort -V | tail -n 1)
+    echo "✅ Automatically determined NODE_VERSION: $NODE_VERSION"
+else
+    echo "✅ Using specified NODE_VERSION: $NODE_VERSION"
+fi
+
+# Determine qclient latest version
+# Check if QCLIENT_VERSION is empty
+if [ -z "$QCLIENT_VERSION" ]; then
+    QCLIENT_VERSION=$(curl -s https://releases.quilibrium.com/qclient-release | grep -E "^qclient-[0-9]+(\.[0-9]+)*" | sed 's/^qclient-//' | cut -d '-' -f 1 | sort -V | tail -n 1)
+    echo "✅ Automatically determined QCLIENT_VERSION: $QCLIENT_VERSION"
+else
+    echo "✅ Using specified QCLIENT_VERSION: $QCLIENT_VERSION"
+fi
+
+echo
+
+# Determine the node binary name based on the architecture and OS
+if [ "$ARCH" = "x86_64" ]; then
+    if [ "$OS" = "Linux" ]; then
+        NODE_BINARY="node-$NODE_VERSION-linux-amd64"
+        GO_BINARY="go1.22.4.linux-amd64.tar.gz"
+        QCLIENT_BINARY="qclient-$QCLIENT_VERSION-linux-amd64"
+    elif [ "$OS" = "Darwin" ]; then
+        NODE_BINARY="node-$NODE_VERSION-darwin-amd64"
+        GO_BINARY="go1.22.4.darwin-amd64.tar.gz"
+        QCLIENT_BINARY="qclient-$QCLIENT_VERSION-darwin-arm64"
+    fi
+elif [ "$ARCH" = "aarch64" ]; then
+    if [ "$OS" = "Linux" ]; then
+        NODE_BINARY="node-$NODE_VERSION-linux-arm64"
+        GO_BINARY="go1.22.4.linux-arm64.tar.gz"
+        QCLIENT_BINARY="qclient-$QCLIENT_VERSION-linux-arm64"
+    elif [ "$OS" = "Darwin" ]; then
+        NODE_BINARY="node-$NODE_VERSION-darwin-arm64"
+        GO_BINARY="go1.22.4.darwin-arm64.tar.gz"
+        QCLIENT_BINARY="qclient-$QCLIENT_VERSION-darwin-arm64"
+    fi
+fi
+
 # Step 4:Download Ceremonyclient
 echo "⏳Downloading Ceremonyclient"
 sleep 1  # Add a 1-second delay
@@ -93,32 +145,6 @@ fi
 cd ~/ceremonyclient/
 # git remote set-url origin https://github.com/QuilibriumNetwork/ceremonyclient.git || git remote set-url origin https://source.quilibrium.com/quilibrium/ceremonyclient.git 
 git checkout release
-
-# Determine the ExecStart line based on the architecture
-ARCH=$(uname -m)
-OS=$(uname -s)
-
-# Determine the node binary name based on the architecture and OS
-if [ "$ARCH" = "x86_64" ]; then
-    if [ "$OS" = "Linux" ]; then
-        NODE_BINARY="node-$VERSION-linux-amd64"
-        GO_BINARY="go1.22.4.linux-amd64.tar.gz"
-        QCLIENT_BINARY="qclient-1.4.19.1-linux-amd64"
-    elif [ "$OS" = "Darwin" ]; then
-        NODE_BINARY="node-$VERSION-darwin-amd64"
-        GO_BINARY="go1.22.44.linux-amd64.tar.gz"
-        QCLIENT_BINARY="qclient-1.4.19.1-darwin-arm64"
-    fi
-elif [ "$ARCH" = "aarch64" ]; then
-    if [ "$OS" = "Linux" ]; then
-        NODE_BINARY="node-$VERSION-linux-arm64"
-        GO_BINARY="go1.22.4.linux-arm64.tar.gz"
-    elif [ "$OS" = "Darwin" ]; then
-        NODE_BINARY="node-$VERSION-darwin-arm64"
-        GO_BINARY="go1.22.4.linux-arm64.tar.gz"
-        QCLIENT_BINARY="qclient-1.4.19.1-linux-arm64"
-    fi
-fi
 
 # Step 4:Download qClient
 echo "⏳Downloading qClient"
